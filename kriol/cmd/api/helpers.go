@@ -1,0 +1,47 @@
+// Filename: cmd/api/healthcheck.go
+
+package main
+
+import (
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+
+	"github.com/julienschmidt/httprouter"
+)
+
+func (app *application) readIDParam(r *http.Request) (int64, error) {
+	// User the "ParamsFromContext()" function to get the request context as a slice
+	params := httprouter.ParamsFromContext(r.Context())
+	// Get the value of the "id" parameter
+	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
+	if err != nil || id < 1 {
+		return 0, errors.New("Invalid ID Parameter")
+	}
+	return id, nil
+	
+}
+
+func (app *application) writeJSON (w http.ResponseWriter, status int, data interface{}, headers http.Header) error {
+	// Convert map into JSON
+	js, err := json.MarshalIndent(data, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	// Add a newline for formatting
+	js = append(js, '\n')
+
+	// Add the headers
+	for key, value := range headers {
+		w.Header()[key] = value
+	}
+
+	// Specify that we will serve our responses through JSON
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	//Write the []byte slice containing the JSON response body
+	w.Write(js)
+	return nil
+}
